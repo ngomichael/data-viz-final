@@ -32,7 +32,6 @@
 
   // // make line graph
   function makeLineGraph() {
-    console.log(data);
     svgLineGraph = d3
       .select('body')
       .append('svg')
@@ -227,25 +226,23 @@
   // create scatter plot for tooltip
   function makeScatterPlot() {
     svgScatterPlot.html('');
-    const xAxisData = data.map(row => row['Year']);
+    const xAxisData = data.map(row =>
+      parseInt(row['Population'].replace(/,/g, ''))
+    );
     const yAxisData = data.map(row => parseInt(row['Rape'].replace(/,/g, '')));
-    console.log(xAxisData);
-    console.log(yAxisData);
 
     let minMax = findMinMax(xAxisData, yAxisData);
 
     minMax = {
-      xMin: minMax.xMin,
-      xMax: minMax.xMax,
+      xMin: minMax.xMin / 1000000,
+      xMax: minMax.xMax / 1000000,
       yMin: minMax.yMin / 1000,
       yMax: minMax.yMax / 1000,
     };
 
-    console.log(minMax);
-
     const funcs = drawAxes(
       minMax,
-      'Year',
+      'Population',
       'Rape',
       svgScatterPlot,
       { min: 50, max: 350 },
@@ -273,14 +270,14 @@
       .attr('x', 130)
       .attr('y', 290)
       .style('font-size', '10pt')
-      .text('Year');
+      .text('Population in millions');
 
     svgScatterPlot
       .append('text')
       .attr('x', 50)
       .attr('y', 30)
       .style('font-size', '10pt')
-      .text('Rape count over time');
+      .text('Rape Count vs Population');
 
     svgScatterPlot
       .append('text')
@@ -293,7 +290,13 @@
   function drawAxes(limits, x, y, svg, rangeX, rangeY) {
     // return x value from a row of data
     const xValue = function(d) {
-      return +d[x];
+      let formattedData =
+        typeof d[x] === 'string' ? parseInt(d[x].replace(/,/g, '')) : +d[x];
+
+      formattedData =
+        svg === svgScatterPlot ? formattedData / 1000000 : formattedData;
+
+      return formattedData;
     };
 
     // function to scale x value
@@ -317,9 +320,7 @@
     // return y value from a row of data
     const yValue = function(d) {
       let formattedData =
-        typeof d[y] === 'string'
-          ? parseInt(d['Rape'].replace(/,/g, ''))
-          : +d[y];
+        typeof d[y] === 'string' ? parseInt(d[y].replace(/,/g, '')) : +d[y];
 
       formattedData =
         svg === svgScatterPlot ? formattedData / 1000 : formattedData;
