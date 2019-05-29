@@ -3,18 +3,12 @@
 (function() {
   let data = 'no data';
   let svgLineGraph = ''; // keep SVG reference in global scope
-  let selectedCrime = 'Aggravated_assault_rate'; // have Burglary_rate as selected crime on load
+  let selectedCrime = 'Aggravated_assault_rate';
   let svgScatterPlot = '';
   let tooltip = '';
 
   // load data and make line graph after window loads
   window.onload = function() {
-    svgLineGraph = d3
-      .select('body')
-      .append('svg')
-      .attr('width', 800)
-      .attr('height', 500);
-
     // make tooltip
     tooltip = d3
       .select('body')
@@ -29,66 +23,37 @@
 
     fetch('./data/us_crime.json')
       .then(res => res.json()) // res is returned from the above fetch
-      .then(data => makeLineGraph(data)); // data is returned from last .then
-
-    // d3.csv is basically fetch but it can be be passed a csv file as a parameter
-    // d3.csv('./data/dataEveryYear.csv').then(data => makeLineGraph(data));
+      .then(jsonData => {
+        data = jsonData;
+        makeDropdown();
+        makeLineGraph();
+      }); // data is returned from last .then
   };
 
   // // make line graph
-  function makeLineGraph(jsonData) {
-    data = jsonData; // assign data as global variable
+  function makeLineGraph() {
+    console.log(data);
+    svgLineGraph = d3
+      .select('body')
+      .append('svg')
+      .attr('class', 'line-graph')
+      .attr('width', 800)
+      .attr('height', 500);
 
     // get arrays of population data and year data
-    const agg_assault_rate_data = data.map(row =>
-      parseFloat(row['Aggravated_assault_rate'])
-    );
-    const burglary_rate_data = data.map(row =>
-      parseFloat(row['Burglary_rate'])
-    );
-    const larceny_theft_rate_data = data.map(row => {
-      return parseFloat(row['Larceny_theft_rate'].replace(/,/g, ''));
+    const crime_rate_data = data.map(row => {
+      const parsedNum =
+        typeof row[selectedCrime] === 'string' &&
+        row[selectedCrime].includes(',')
+          ? parseFloat(row[selectedCrime].replace(/,/g, ''))
+          : parseFloat(row[selectedCrime]);
+      return parsedNum;
     });
-    const motor_vehicle_theft_rate_data = data.map(row =>
-      parseFloat(row['Motor_vehicle_theft_rate'])
-    );
-    const murder_and_nonnegligent_manslaughter_rate_data = data.map(row =>
-      parseFloat(row['Murder_and_nonnegligent_manslaughter_rate'])
-    );
-    const property_crime_rate_data = data.map(row =>
-      parseFloat(row['Property_crime_rate'].replace(/,/g, ''))
-    );
-    const rape_rate_data = data.map(row => parseFloat(row['Rape_rate']));
-    const robbery_rate_data = data.map(row => parseFloat(row['Robbery_rate']));
-    const violent_crime_rate_data = data.map(row =>
-      parseFloat(row['Violent_crime_rate'])
-    );
 
     const year_data = data.map(row => parseInt(row['Year']));
 
-    // console.log(agg_assault_rate_data);
-    // console.log(burglary_rate_data);
-    // console.log(larceny_theft_rate_data);
-    // console.log(motor_vehicle_theft_rate_data);
-    // console.log(murder_and_nonnegligent_manslaughter_rate_data);
-    // console.log(property_crime_rate_data);
-    // console.log(rape_rate_data);
-    // console.log(robbery_rate_data);
-    // console.log(violent_crime_rate_data);
-    // console.log(year_data);
-
     // find data limits
-    const axesLimits = findMinMax(year_data, [
-      ...agg_assault_rate_data,
-      ...burglary_rate_data,
-      ...larceny_theft_rate_data,
-      ...motor_vehicle_theft_rate_data,
-      ...murder_and_nonnegligent_manslaughter_rate_data,
-      ...property_crime_rate_data,
-      ...rape_rate_data,
-      ...robbery_rate_data,
-      ...violent_crime_rate_data,
-    ]);
+    const axesLimits = findMinMax(year_data, crime_rate_data);
 
     // draw title and axes labels
     makeLabels();
@@ -102,22 +67,23 @@
       { min: 50, max: 750 },
       { min: 50, max: 450 }
     );
-
-    // creates dropdown of different years
-    makeDropdown(mapFunctions);
-
     // plot data as points and add tooltip functionality
     plotData(mapFunctions);
   }
 
   // make title and axes labels
   function makeLabels() {
+    const crimeName = selectedCrime
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
     svgLineGraph
       .append('text')
       .attr('x', 100)
       .attr('y', 40)
       .style('font-size', '14pt')
-      .text('Crime Rate Change Over Time');
+      .text(`${crimeName} Change Over Time`);
 
     svgLineGraph
       .append('text')
@@ -128,24 +94,24 @@
 
     svgLineGraph
       .append('text')
-      .attr('transform', 'translate(10, 300)rotate(-90)')
+      .attr('transform', 'translate(10, 320)rotate(-90)')
       .style('font-size', '10pt')
-      .text('Crime Rate');
+      .text(crimeName);
   }
 
   // create dropdown to filter data points
-  function makeDropdown(mapFunctions) {
+  function makeDropdown() {
     // get all unique countries to include in dropdown
     const dropdownCrimes = [
-      'Aggravated_assault_rate',
-      'Burglary_rate',
-      'Larceny_theft_rate',
-      'Motor_vehicle_theft_rate',
-      'Murder_and_nonnegligent_manslaughter_rate',
-      'Property_crime_rate',
-      'Rape_rate',
-      'Robbery_rate',
-      'Violent_crime_rate',
+      'Aggravated Assault Rate',
+      'Burglary Rate',
+      'Larceny Theft Rate',
+      'Motor Vehicle Theft Rate',
+      'Murder and Nonnegligent Manslaughter Rate',
+      'Property Crime Rate',
+      'Rape Rate',
+      'Robbery Rate',
+      'Violent Crime Rate',
     ].sort();
 
     // create select element and add an on change event handler to update shown country
@@ -154,9 +120,19 @@
       .append('select')
       .attr('name', 'crime-list')
       .on('change', function() {
-        selectedCrime = this.value;
+        selectedCrime = this.value
+          .split(' ')
+          .map((word, idx) => {
+            return idx === 0
+              ? word.charAt(0).toUpperCase() + word.slice(1)
+              : word.charAt(0).toLowerCase() + word.slice(1);
+          })
+          .join('_');
+
         d3.selectAll('.line').remove();
-        plotData(mapFunctions);
+        d3.select('.line-graph').remove();
+        makeLineGraph();
+        // plotData(mapFunctions);
       });
 
     // add dropdown options with the country as text
@@ -201,8 +177,6 @@
   // draw lines on the SVG
   // and add tooltip functionality
   function plotData(map) {
-    console.log(data);
-
     // mapping functions
     const xScale = map.xScale;
     const yScale = map.yScale;
@@ -215,18 +189,10 @@
           typeof d[selectedCrime] === 'string' && d[selectedCrime].includes(',')
             ? parseFloat(d[selectedCrime].replace(/,/g, ''))
             : parseFloat(d[selectedCrime]);
-        console.log(parsedNum);
+
         return yScale(parsedNum);
       })
       .curve(d3.curveMonotoneX);
-
-    // return parseFloat(row['Larceny_theft_rate'].replace(/,/g, ''));
-
-    // const line = d3
-    //   .line()
-    //   .x(d => xScale(d.Year))
-    //   .y(d => console.log(d[selectedCrime]))
-    //   .curve(d3.curveMonotoneX);
 
     // draw line for chosen country and add tooltip functionality
     svgLineGraph
@@ -258,65 +224,70 @@
       });
   }
 
-  // // create scatter plot for tooltip
-  // function makeScatterPlot() {
-  //   svgScatterPlot.html('');
-  //   const fertilityRateData = data.map(row => row['fertility_rate']);
-  //   const lifeExpectancyData = data.map(row => row['life_expectancy']);
+  // create scatter plot for tooltip
+  function makeScatterPlot() {
+    svgScatterPlot.html('');
+    const xAxisData = data.map(row => row['Year']);
+    const yAxisData = data.map(row => parseInt(row['Rape'].replace(/,/g, '')));
+    console.log(xAxisData);
+    console.log(yAxisData);
 
-  //   let minMax = findMinMax(fertilityRateData, lifeExpectancyData);
-  //   minMax = {
-  //     xMin: parseFloat(minMax.xMin) - 0.1,
-  //     xMax: parseFloat(minMax.xMax) + 0.1,
-  //     yMin: minMax.yMin - 1,
-  //     yMax: minMax.yMax + 1,
-  //   };
+    let minMax = findMinMax(xAxisData, yAxisData);
 
-  //   const funcs = drawAxes(
-  //     minMax,
-  //     'fertility_rate',
-  //     'life_expectancy',
-  //     svgScatterPlot,
-  //     { min: 50, max: 350 },
-  //     { min: 50, max: 250 }
-  //   );
+    minMax = {
+      xMin: minMax.xMin,
+      xMax: minMax.xMax,
+      yMin: minMax.yMin / 1000,
+      yMax: minMax.yMax / 1000,
+    };
 
-  //   plotScatterPlot(funcs);
-  // }
+    console.log(minMax);
 
-  // // plots points on the svg in tooltip and creates labels
-  // function plotScatterPlot(funcs) {
-  //   svgScatterPlot
-  //     .selectAll('.dot')
-  //     .data(data)
-  //     .enter()
-  //     .append('circle')
-  //     .attr('class', 'circles')
-  //     .attr('cx', funcs.x)
-  //     .attr('cy', funcs.y)
-  //     .attr('r', 1.5)
-  //     .attr('fill', '#4286f4');
+    const funcs = drawAxes(
+      minMax,
+      'Year',
+      'Rape',
+      svgScatterPlot,
+      { min: 50, max: 350 },
+      { min: 50, max: 250 }
+    );
 
-  //   svgScatterPlot
-  //     .append('text')
-  //     .attr('x', 130)
-  //     .attr('y', 290)
-  //     .style('font-size', '10pt')
-  //     .text('Fertility Rate');
+    plotScatterPlot(funcs);
+  }
 
-  //   svgScatterPlot
-  //     .append('text')
-  //     .attr('x', 50)
-  //     .attr('y', 30)
-  //     .style('font-size', '10pt')
-  //     .text('Life Expectancy vs Fertility Rate');
+  // plots points on the svg in tooltip and creates labels
+  function plotScatterPlot(funcs) {
+    svgScatterPlot
+      .selectAll('.dot')
+      .data(data)
+      .enter()
+      .append('circle')
+      .attr('class', 'circles')
+      .attr('cx', funcs.x)
+      .attr('cy', funcs.y)
+      .attr('r', 3)
+      .attr('fill', '#4286f4');
 
-  //   svgScatterPlot
-  //     .append('text')
-  //     .attr('transform', 'translate(15, 220)rotate(-90)')
-  //     .style('font-size', '10pt')
-  //     .text('Life Expectancy');
-  // }
+    svgScatterPlot
+      .append('text')
+      .attr('x', 130)
+      .attr('y', 290)
+      .style('font-size', '10pt')
+      .text('Year');
+
+    svgScatterPlot
+      .append('text')
+      .attr('x', 50)
+      .attr('y', 30)
+      .style('font-size', '10pt')
+      .text('Rape count over time');
+
+    svgScatterPlot
+      .append('text')
+      .attr('transform', 'translate(15, 220)rotate(-90)')
+      .style('font-size', '10pt')
+      .text('Rape in thousands');
+  }
 
   // draw the axes and ticks
   function drawAxes(limits, x, y, svg, rangeX, rangeY) {
@@ -328,7 +299,7 @@
     // function to scale x value
     const xScale = d3
       .scaleLinear()
-      .domain([limits.xMin, limits.xMax]) // give domain buffer room
+      .domain([limits.xMin - 1, limits.xMax + 1]) // give domain buffer room
       .range([rangeX.min, rangeX.max]);
 
     // xMap returns a scaled x value from a row of data
@@ -345,7 +316,14 @@
 
     // return y value from a row of data
     const yValue = function(d) {
-      return +d[y];
+      let formattedData =
+        typeof d[y] === 'string'
+          ? parseInt(d['Rape'].replace(/,/g, ''))
+          : +d[y];
+
+      formattedData =
+        svg === svgScatterPlot ? formattedData / 1000 : formattedData;
+      return formattedData;
     };
 
     // function to scale y
