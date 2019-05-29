@@ -3,7 +3,7 @@
 (function() {
   let data = 'no data';
   let svgLineGraph = ''; // keep SVG reference in global scope
-  let selectedLocation = 'AUS'; // have AUS as selected country on load
+  let selectedCrime = 'Aggravated_assault_rate'; // have Burglary_rate as selected crime on load
   let svgScatterPlot = '';
   let tooltip = '';
 
@@ -38,7 +38,7 @@
   // // make line graph
   function makeLineGraph(jsonData) {
     data = jsonData; // assign data as global variable
-    console.log(data);
+
     // get arrays of population data and year data
     const agg_assault_rate_data = data.map(row =>
       parseFloat(row['Aggravated_assault_rate'])
@@ -66,162 +66,197 @@
 
     const year_data = data.map(row => parseInt(row['Year']));
 
-    console.log(agg_assault_rate_data);
-    console.log(burglary_rate_data);
-    console.log(larceny_theft_rate_data);
-    console.log(motor_vehicle_theft_rate_data);
-    console.log(murder_and_nonnegligent_manslaughter_rate_data);
-    console.log(property_crime_rate_data);
-    console.log(rape_rate_data);
-    console.log(robbery_rate_data);
-    console.log(violent_crime_rate_data);
-    console.log(year_data);
+    // console.log(agg_assault_rate_data);
+    // console.log(burglary_rate_data);
+    // console.log(larceny_theft_rate_data);
+    // console.log(motor_vehicle_theft_rate_data);
+    // console.log(murder_and_nonnegligent_manslaughter_rate_data);
+    // console.log(property_crime_rate_data);
+    // console.log(rape_rate_data);
+    // console.log(robbery_rate_data);
+    // console.log(violent_crime_rate_data);
+    // console.log(year_data);
 
-    // // find data limits
-    // const axesLimits = findMinMax(year_data, pop_mlns_data);
+    // find data limits
+    const axesLimits = findMinMax(year_data, [
+      ...agg_assault_rate_data,
+      ...burglary_rate_data,
+      ...larceny_theft_rate_data,
+      ...motor_vehicle_theft_rate_data,
+      ...murder_and_nonnegligent_manslaughter_rate_data,
+      ...property_crime_rate_data,
+      ...rape_rate_data,
+      ...robbery_rate_data,
+      ...violent_crime_rate_data,
+    ]);
 
-    // // draw title and axes labels
-    // makeLabels();
+    // draw title and axes labels
+    makeLabels();
 
-    // // draw axes and return scaling + mapping functions
-    // const mapFunctions = drawAxes(
-    //   axesLimits,
-    //   'time',
-    //   'pop_mlns',
-    //   svgLineGraph,
-    //   { min: 50, max: 750 },
-    //   { min: 50, max: 450 }
-    // );
+    // draw axes and return scaling + mapping functions
+    const mapFunctions = drawAxes(
+      axesLimits,
+      'time',
+      { selectedCrime },
+      svgLineGraph,
+      { min: 50, max: 750 },
+      { min: 50, max: 450 }
+    );
 
-    // // creates dropdown of different years
-    // makeDropdown(mapFunctions);
+    // creates dropdown of different years
+    makeDropdown(mapFunctions);
 
-    // // plot data as points and add tooltip functionality
-    // plotData(mapFunctions);
+    // plot data as points and add tooltip functionality
+    plotData(mapFunctions);
   }
 
   // make title and axes labels
-  // function makeLabels() {
-  //   svgLineGraph
-  //     .append('text')
-  //     .attr('x', 100)
-  //     .attr('y', 40)
-  //     .style('font-size', '14pt')
-  //     .text('Population Change Over Time');
+  function makeLabels() {
+    svgLineGraph
+      .append('text')
+      .attr('x', 100)
+      .attr('y', 40)
+      .style('font-size', '14pt')
+      .text('Crime Rate Change Over Time');
 
-  //   svgLineGraph
-  //     .append('text')
-  //     .attr('x', 375)
-  //     .attr('y', 490)
-  //     .style('font-size', '10pt')
-  //     .text('Year');
+    svgLineGraph
+      .append('text')
+      .attr('x', 375)
+      .attr('y', 490)
+      .style('font-size', '10pt')
+      .text('Year');
 
-  //   svgLineGraph
-  //     .append('text')
-  //     .attr('transform', 'translate(10, 300)rotate(-90)')
-  //     .style('font-size', '10pt')
-  //     .text('Population in millions');
-  // }
+    svgLineGraph
+      .append('text')
+      .attr('transform', 'translate(10, 300)rotate(-90)')
+      .style('font-size', '10pt')
+      .text('Crime Rate');
+  }
 
-  // // create dropdown to filter data points
-  // function makeDropdown(mapFunctions) {
-  //   // get all unique countries to include in dropdown
-  //   const dropdownCountries = [
-  //     ...new Set(data.map(location => location.location)),
-  //   ].sort();
+  // create dropdown to filter data points
+  function makeDropdown(mapFunctions) {
+    // get all unique countries to include in dropdown
+    const dropdownCrimes = [
+      'Aggravated_assault_rate',
+      'Burglary_rate',
+      'Larceny_theft_rate',
+      'Motor_vehicle_theft_rate',
+      'Murder_and_nonnegligent_manslaughter_rate',
+      'Property_crime_rate',
+      'Rape_rate',
+      'Robbery_rate',
+      'Violent_crime_rate',
+    ].sort();
 
-  //   // create select element and add an on change event handler to update shown country
-  //   const dropdown = d3
-  //     .select('#filter')
-  //     .append('select')
-  //     .attr('name', 'country-list')
-  //     .on('change', function() {
-  //       selectedLocation = this.value;
-  //       d3.selectAll('.line').remove();
-  //       plotData(mapFunctions);
-  //     });
+    // create select element and add an on change event handler to update shown country
+    const dropdown = d3
+      .select('#filter')
+      .append('select')
+      .attr('name', 'crime-list')
+      .on('change', function() {
+        selectedCrime = this.value;
+        d3.selectAll('.line').remove();
+        plotData(mapFunctions);
+      });
 
-  //   // add dropdown options with the country as text
-  //   dropdown
-  //     .selectAll('option')
-  //     .data(dropdownCountries)
-  //     .enter()
-  //     .append('option')
-  //     .text(d => d)
-  //     .attr('value', d => d);
+    // add dropdown options with the country as text
+    dropdown
+      .selectAll('option')
+      .data(dropdownCrimes)
+      .enter()
+      .append('option')
+      .text(d => d)
+      .attr('value', d => d);
 
-  //   const prevButton = document.getElementById('prev');
-  //   const nextButton = document.getElementById('next');
+    const prevButton = document.getElementById('prev');
+    const nextButton = document.getElementById('next');
 
-  //   // add click event listener to update dropdown value and filter data points by previous country in list
-  //   prevButton.addEventListener('click', () => {
-  //     const select = document.getElementsByTagName('select')[0];
+    // add click event listener to update dropdown value and filter data points by previous country in list
+    prevButton.addEventListener('click', () => {
+      const select = document.getElementsByTagName('select')[0];
 
-  //     if (select.selectedIndex > 0) {
-  //       select.selectedIndex--;
-  //       select.dispatchEvent(new Event('change'));
-  //     }
-  //   });
+      if (select.selectedIndex > 0) {
+        select.selectedIndex--;
+        select.dispatchEvent(new Event('change'));
+      } else if (select.selectedIndex === 0) {
+        select.selectedIndex = dropdownCrimes.length - 1;
+        select.dispatchEvent(new Event('change'));
+      }
+    });
 
-  //   // add click event listener to update dropdown value and filter data points by next country in list
-  //   nextButton.addEventListener('click', () => {
-  //     const select = document.getElementsByTagName('select')[0];
+    // add click event listener to update dropdown value and filter data points by next country in list
+    nextButton.addEventListener('click', () => {
+      const select = document.getElementsByTagName('select')[0];
 
-  //     if (select.selectedIndex !== dropdownCountries.length - 1) {
-  //       select.selectedIndex++;
-  //       select.dispatchEvent(new Event('change'));
-  //     }
-  //   });
-  // }
+      if (select.selectedIndex !== dropdownCrimes.length - 1) {
+        select.selectedIndex++;
+        select.dispatchEvent(new Event('change'));
+      } else if (select.selectedIndex === dropdownCrimes.length - 1) {
+        select.selectedIndex = 0;
+        select.dispatchEvent(new Event('change'));
+      }
+    });
+  }
 
-  // // draw lines on the SVG
-  // // and add tooltip functionality
-  // function plotData(map) {
-  //   const filteredData = data.filter(
-  //     location => location.location === selectedLocation
-  //   );
+  // draw lines on the SVG
+  // and add tooltip functionality
+  function plotData(map) {
+    console.log(data);
 
-  //   console.log(filteredData);
+    // mapping functions
+    const xScale = map.xScale;
+    const yScale = map.yScale;
 
-  //   // mapping functions
-  //   const xScale = map.xScale;
-  //   const yScale = map.yScale;
+    const line = d3
+      .line()
+      .x(d => xScale(d.Year))
+      .y(d => {
+        const parsedNum =
+          typeof d[selectedCrime] === 'string' && d[selectedCrime].includes(',')
+            ? parseFloat(d[selectedCrime].replace(/,/g, ''))
+            : parseFloat(d[selectedCrime]);
+        console.log(parsedNum);
+        return yScale(parsedNum);
+      })
+      .curve(d3.curveMonotoneX);
 
-  //   const line = d3
-  //     .line()
-  //     .x(d => xScale(d.time))
-  //     .y(d => yScale(d.pop_mlns))
-  //     .curve(d3.curveMonotoneX);
+    // return parseFloat(row['Larceny_theft_rate'].replace(/,/g, ''));
 
-  //   // draw line for chosen country and add tooltip functionality
-  //   svgLineGraph
-  //     .append('path')
-  //     .datum(filteredData)
-  //     .attr('class', 'line')
-  //     .attr('d', line)
-  //     // add tooltip functionality to line
-  //     .on('mouseover', () => {
-  //       tooltip
-  //         .transition()
-  //         .duration(200)
-  //         .style('opacity', 1);
+    // const line = d3
+    //   .line()
+    //   .x(d => xScale(d.Year))
+    //   .y(d => console.log(d[selectedCrime]))
+    //   .curve(d3.curveMonotoneX);
 
-  //       const yPos =
-  //         d3.event.pageY < 325 ? d3.event.pageY + 15 : d3.event.pageY - 325;
+    // draw line for chosen country and add tooltip functionality
+    svgLineGraph
+      .append('path')
+      .datum(data)
+      .attr('class', 'line')
+      .attr('d', line)
+      // add tooltip functionality to line
+      .on('mouseover', () => {
+        tooltip
+          .transition()
+          .duration(200)
+          .style('opacity', 1);
 
-  //       tooltip
-  //         .style('left', d3.event.pageX + 10 + 'px')
-  //         .style('top', yPos + 'px');
+        const yPos =
+          d3.event.pageY < 325 ? d3.event.pageY + 15 : d3.event.pageY - 325;
 
-  //       makeScatterPlot();
-  //     })
-  //     .on('mouseout', () => {
-  //       tooltip
-  //         .transition()
-  //         .duration(500)
-  //         .style('opacity', 0);
-  //     });
-  // }
+        tooltip
+          .style('left', d3.event.pageX + 10 + 'px')
+          .style('top', yPos + 'px');
+
+        makeScatterPlot();
+      })
+      .on('mouseout', () => {
+        tooltip
+          .transition()
+          .duration(500)
+          .style('opacity', 0);
+      });
+  }
 
   // // create scatter plot for tooltip
   // function makeScatterPlot() {
@@ -283,79 +318,79 @@
   //     .text('Life Expectancy');
   // }
 
-  // // draw the axes and ticks
-  // function drawAxes(limits, x, y, svg, rangeX, rangeY) {
-  //   // return x value from a row of data
-  //   const xValue = function(d) {
-  //     return +d[x];
-  //   };
+  // draw the axes and ticks
+  function drawAxes(limits, x, y, svg, rangeX, rangeY) {
+    // return x value from a row of data
+    const xValue = function(d) {
+      return +d[x];
+    };
 
-  //   // function to scale x value
-  //   const xScale = d3
-  //     .scaleLinear()
-  //     .domain([limits.xMin, limits.xMax]) // give domain buffer room
-  //     .range([rangeX.min, rangeX.max]);
+    // function to scale x value
+    const xScale = d3
+      .scaleLinear()
+      .domain([limits.xMin, limits.xMax]) // give domain buffer room
+      .range([rangeX.min, rangeX.max]);
 
-  //   // xMap returns a scaled x value from a row of data
-  //   const xMap = function(d) {
-  //     return xScale(xValue(d));
-  //   };
+    // xMap returns a scaled x value from a row of data
+    const xMap = function(d) {
+      return xScale(xValue(d));
+    };
 
-  //   // plot x-axis at bottom of SVG
-  //   const xAxis = d3.axisBottom().scale(xScale);
-  //   svg
-  //     .append('g')
-  //     .attr('transform', 'translate(0, ' + rangeY.max + ')')
-  //     .call(xAxis);
+    // plot x-axis at bottom of SVG
+    const xAxis = d3.axisBottom().scale(xScale);
+    svg
+      .append('g')
+      .attr('transform', 'translate(0, ' + rangeY.max + ')')
+      .call(xAxis);
 
-  //   // return y value from a row of data
-  //   const yValue = function(d) {
-  //     return +d[y];
-  //   };
+    // return y value from a row of data
+    const yValue = function(d) {
+      return +d[y];
+    };
 
-  //   // function to scale y
-  //   const yScale = d3
-  //     .scaleLinear()
-  //     .domain([limits.yMax, limits.yMin]) // give domain buffer
-  //     .range([rangeY.min, rangeY.max]);
+    // function to scale y
+    const yScale = d3
+      .scaleLinear()
+      .domain([limits.yMax, limits.yMin]) // give domain buffer
+      .range([rangeY.min, rangeY.max]);
 
-  //   // yMap returns a scaled y value from a row of data
-  //   const yMap = function(d) {
-  //     return yScale(yValue(d));
-  //   };
+    // yMap returns a scaled y value from a row of data
+    const yMap = function(d) {
+      return yScale(yValue(d));
+    };
 
-  //   // plot y-axis at the left of SVG
-  //   const yAxis = d3.axisLeft().scale(yScale);
-  //   svg
-  //     .append('g')
-  //     .attr('transform', 'translate(' + rangeX.min + ', 0)')
-  //     .call(yAxis);
+    // plot y-axis at the left of SVG
+    const yAxis = d3.axisLeft().scale(yScale);
+    svg
+      .append('g')
+      .attr('transform', 'translate(' + rangeX.min + ', 0)')
+      .call(yAxis);
 
-  //   // return mapping and scaling functions
-  //   return {
-  //     x: xMap,
-  //     y: yMap,
-  //     xScale: xScale,
-  //     yScale: yScale,
-  //   };
-  // }
+    // return mapping and scaling functions
+    return {
+      x: xMap,
+      y: yMap,
+      xScale: xScale,
+      yScale: yScale,
+    };
+  }
 
-  // // find min and max for arrays of x and y
-  // function findMinMax(x, y) {
-  //   // get min/max x values
-  //   const xMin = d3.min(x);
-  //   const xMax = d3.max(x);
+  // find min and max for arrays of x and y
+  function findMinMax(x, y) {
+    // get min/max x values
+    const xMin = d3.min(x);
+    const xMax = d3.max(x);
 
-  //   // get min/max y values
-  //   const yMin = d3.min(y);
-  //   const yMax = d3.max(y);
+    // get min/max y values
+    const yMin = d3.min(y);
+    const yMax = d3.max(y);
 
-  //   // return formatted min/max data as an object
-  //   return {
-  //     xMin: xMin,
-  //     xMax: xMax,
-  //     yMin: yMin,
-  //     yMax: yMax,
-  //   };
-  // }
+    // return formatted min/max data as an object
+    return {
+      xMin: xMin,
+      xMax: xMax,
+      yMin: yMin,
+      yMax: yMax,
+    };
+  }
 })();
