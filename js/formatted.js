@@ -22,7 +22,7 @@
       .attr('height', 300);
 
     fetch('./data/us_crime.json')
-      .then(res => res.json()) // res is returned from the above fetch
+      .then(res => res.json())
       .then(jsonData => {
         data = jsonData;
         makeDropdown();
