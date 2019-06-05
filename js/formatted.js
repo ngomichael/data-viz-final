@@ -197,10 +197,7 @@
       .datum(data)
       .attr('class', 'line')
       .attr('d', line)
-      .style('stroke-width', '0')
-      .transition()
-      .duration(750)
-      .style('stroke-width', '7')
+
       // add tooltip functionality to line
       .on('mouseover', () => {
         tooltip
@@ -222,7 +219,11 @@
           .transition()
           .duration(500)
           .style('opacity', 0);
-      });
+      })
+      .style('stroke-width', '0')
+      .transition()
+      .duration(750)
+      .style('stroke-width', '7');
 
     function pathTween() {
       var interpolate = d3.scale
