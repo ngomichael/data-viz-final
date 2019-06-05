@@ -14,7 +14,6 @@ path {
 .line {
   fill: none;
   stroke: #ffab00;
-  stroke-width: 5;
 }
 
 .axis path,
